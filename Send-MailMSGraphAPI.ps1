@@ -13,7 +13,7 @@ function Send-MailMSGraphAPI {
         [String]
         $From,
         [Parameter(Mandatory = $true)]
-        [String]
+        [String[]]
         $To,
         [Parameter(Mandatory = $true)]
         [String]
@@ -38,7 +38,16 @@ function Send-MailMSGraphAPI {
         "Content-Type"  = "application/json"
     }
     $SendURL = "https://graph.microsoft.com/v1.0/users/$From/sendMail"
-    $SendBody = @{
+    $Recipients = @()
+    foreach ($Recipient in $To) {
+        $RecipientObj = @{
+            "emailAddress" = @{
+                "address" = $Recipient
+            }
+        }
+        $Recipients += $RecipientObj
+    }
+    $SendMessage = @{
         "message"         = @{
             "subject"      = $Subject
             "body"         = @{
@@ -46,15 +55,13 @@ function Send-MailMSGraphAPI {
                 "content"     = $Body
             }
             "toRecipients" = @(
-                @{
-                    "emailAddress" = @{
-                        "address" = $To
-                    }
-                }
+                $Recipients
             )
         }
         "saveToSentItems" = $SaveToSentItems
     }
-    $SendJsonBody = $SendBody | ConvertTo-Json -Depth 4
-    Invoke-RestMethod -Method POST -Uri $SendURL -Headers $Headers -Body $SendJsonBody
+    $SendMessageJson = $SendMessage | ConvertTo-Json -Depth 4
+    Invoke-RestMethod -Method POST -Uri $SendURL -Headers $Headers -Body $SendMessageJson
 }
+
+Send-MailMSGraphAPI
